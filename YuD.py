@@ -1,3 +1,4 @@
+import sys
 import pandas as pd
 import numpy as np
 import GTF
@@ -7,8 +8,8 @@ try:
     user_transcript_file_input = input("Enter transcript file name (file should be in csv format):").lower()
     user_transcript_file_input_split = user_transcript_file_input.split('.')
     if user_transcript_file_input_split[-1] != "csv":
-        print("The input file is not recognized, please enter a CSV file")
-        quit()
+        print("ERROR: The input file is not recognized, please enter a CSV file")
+        sys.exit()
     else:
         df1 = pd.read_csv(user_transcript_file_input)
         print(df1)
@@ -16,8 +17,8 @@ try:
     user_gtf_file_input = input("Enter gtf file name (file should be in gtf format):").lower()
     user_gtf_file_input_split = user_gtf_file_input.split('.')
     if user_gtf_file_input_split[-1] != "gtf":
-        print("The input file is not recognized, please enter a gtf file")
-        quit()
+        print("ERROR: The input file is not recognized, please enter a gtf file")
+        sys.exit()
     else:
         df2 = GTF.dataframe(user_gtf_file_input)
         print(df2)
@@ -26,9 +27,37 @@ try:
     user_input_kb = int(input("Enter the number of KBs you want to look UPSTREAM and DOWNSTREAM:"))
     user_input_kb_mul = user_input_kb * 1000
 
-    'indexing transcripts file'
+    'counting no.of rows in CSV file'
     index1 = df1.index
     last_index1 = index1[-1] + 1
+    'counting no.of rows in GTF file'
+    index2 = df2.index
+    last_index2 = index2[-1] + 1
+    'counting no.of columns in GTF file'
+    last_column = len(df2.columns)
+
+    'parameters for comparing CSV and GTF file'
+    no_of_columns = last_column - 8
+    seq_count = 0
+    count = 0
+    definite_loop_count = last_index2 * no_of_columns
+    no_of_run_counts = 0
+
+    'comparing data of both the files'
+    for i in df1.index:
+        seq_id = df1.iloc[i, 0]
+        seq_count += 1
+        count = 0
+        no_of_run_counts = 0
+        for j in df2.index:
+            for k in df2[df2.columns[8:last_column]]:
+                no_of_run_counts += 1
+                if seq_id == df2[k][j]:
+                    count += 1
+                elif count == 0 and no_of_run_counts == definite_loop_count:
+                    print("ERROR: There is no matching information about " + seq_id + " in provided GTF file")
+                    sys.exit()
+
 
     'inserting values of upstream, start, end, downstream to arrays'
     array_start_values = np.array([], dtype='int64')
@@ -44,8 +73,8 @@ try:
             end_value = df1.iloc[i, 2]
 
             if str(start_value).lower() == "nan" or str(end_value).lower() == "nan":
-                print("Any start and end site cannot be left empty")
-                break
+                print("ERROR: Any start and end site cannot be left empty")
+                sys.exit()
             else:
                 upstream_values = start_value - user_input_kb_mul
                 downstream_values = end_value + user_input_kb_mul
@@ -79,8 +108,7 @@ try:
         f.write(condition2.to_csv(index=False))
     f.close()
     print("Upstream and Downstream Files have been created")
-    input("Press ENTER to EXIT")
 
 except Exception as e:
     print(e)
-    input("Press ENTER to EXIT")
+    sys.exit()
